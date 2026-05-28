@@ -19,7 +19,7 @@ App web estatica para consolidar archivos Excel de presupuesto en una linea por 
 - El output agrupa por `TECH + proveedor + moneda`.
 - El monto de cada item se calcula exclusivamente con `Costo Asu sub-Total x 1,1`.
 - Si no existe `Costo Asu sub-Total` numerico, el item no se suma y queda marcado como omitido en la trazabilidad.
-- La columna `Moneda` se detecta desde el resumen/total de `PClientes`, normalmente en el bloque `Cantidad / Moneda / Total`.
+- La columna `Moneda` se detecta desde el resumen/total de `PClientes`: si el total tiene punto y coma se toma como `USD`; si usa separadores de miles sin decimal o indica `Gs.`, se toma como `GS`.
 - `Fecha inicio`, `EQ. USD` y `Probabilidad` quedan vacios.
 - `SECTOR` siempre queda como `CORPORATIVO`.
 - Si falta proveedor, se agrupa bajo `PROVEEDOR PENDIENTE` y se registra advertencia.

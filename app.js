@@ -342,7 +342,7 @@ function findBestClientSheet(workbook) {
       const rows = sheetRows(workbook.Sheets[sheetName]);
       const tables = extractTables(rows, "client");
       const items = tables.flatMap((table) => table.items);
-      const currency = detectSheetCurrency(rows);
+      const currency = detectSheetCurrency(workbook.Sheets[sheetName], rows);
       return {
         sheetName,
         rows,
@@ -385,36 +385,106 @@ function sheetRows(sheet) {
   });
 }
 
-function detectSheetCurrency(rows) {
-  const found = new Map();
+function detectSheetCurrency(sheet, rows) {
+  const formattedRows = formattedSheetRows(sheet);
+  const totalCandidates = [];
+  const allCandidates = [];
 
-  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
-    const row = rows[rowIndex] || [];
-    const labels = row.map((cell) => normalizeText(cell));
+  for (let rowIndex = 0; rowIndex < formattedRows.length; rowIndex += 1) {
+    const formattedRow = formattedRows[rowIndex] || [];
+    const rawRow = rows[rowIndex] || [];
+    const labels = formattedRow.map((cell) => normalizeText(cell));
+    const rowText = labels.join(" ");
+    const looksLikeTotal = labels.some((label) => label === "total" || label.includes("precio venta") || label.includes("pv sin iva"));
     const currencyIndex = labels.findIndex((label) => label === "moneda" || label.includes("moneda"));
 
     if (currencyIndex !== -1) {
-      for (let lookAhead = rowIndex + 1; lookAhead < Math.min(rows.length, rowIndex + 8); lookAhead += 1) {
-        addDetectedCurrency(found, (rows[lookAhead] || [])[currencyIndex]);
+      for (let lookAhead = rowIndex + 1; lookAhead < Math.min(formattedRows.length, rowIndex + 8); lookAhead += 1) {
+        const currency = explicitCurrency((formattedRows[lookAhead] || [])[currencyIndex]);
+        if (currency) {
+          totalCandidates.push(currency);
+        }
       }
     }
 
-    for (const cell of row) {
-      addDetectedCurrency(found, cell);
+    for (let cellIndex = 0; cellIndex < formattedRow.length; cellIndex += 1) {
+      const formatted = stringify(formattedRow[cellIndex]);
+      const raw = rawRow[cellIndex];
+      const explicit = explicitCurrency(formatted);
+      const inferred = explicit || inferCurrencyFromNumberFormat(formatted, raw);
+      if (!inferred) {
+        continue;
+      }
+      allCandidates.push(inferred);
+      if (looksLikeTotal || rowText.includes("resumen ejecutivo")) {
+        totalCandidates.push(inferred);
+      }
     }
   }
 
-  return Array.from(found.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([currency]) => currency)[0] || "";
+  return mostFrequentCurrency(totalCandidates) || mostFrequentCurrency(allCandidates) || "";
 }
 
-function addDetectedCurrency(found, value) {
-  const currency = cleanCurrency(value);
-  if (currency === "USD" || currency === "GS" || currency === "PYG") {
-    const normalized = currency === "PYG" ? "GS" : currency;
-    found.set(normalized, (found.get(normalized) || 0) + 1);
+function formattedSheetRows(sheet) {
+  const range = XLSX.utils.decode_range(sheet["!ref"] || "A1:A1");
+  const rows = [];
+  for (let row = range.s.r; row <= range.e.r; row += 1) {
+    const values = [];
+    for (let col = range.s.c; col <= range.e.c; col += 1) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
+      values.push(cell ? cell.w ?? cell.v ?? null : null);
+    }
+    rows.push(values);
   }
+  return rows;
+}
+
+function explicitCurrency(value) {
+  const text = normalizeText(value);
+  if (!text) {
+    return "";
+  }
+  if (text.includes("gs") || text.includes("pyg") || text.includes("guarani")) {
+    return "GS";
+  }
+  if (text.includes("usd") || text.includes("u$s") || text.includes("us$") || text.includes("dolar")) {
+    return "USD";
+  }
+  return "";
+}
+
+function inferCurrencyFromNumberFormat(value, rawValue) {
+  if (typeof rawValue !== "number") {
+    return "";
+  }
+  const text = stringify(value).trim();
+  if (!/\d/.test(text)) {
+    return "";
+  }
+  const cleaned = text.replace(/[^\d.,]/g, "");
+  const hasDot = cleaned.includes(".");
+  const hasComma = cleaned.includes(",");
+
+  if (hasDot && hasComma) {
+    return "USD";
+  }
+  if (hasDot && !hasComma && /^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+    return "GS";
+  }
+  if (hasComma && !hasDot && /^\d{1,3}(,\d{3})+$/.test(cleaned)) {
+    return "GS";
+  }
+  return "";
+}
+
+function mostFrequentCurrency(currencies) {
+  const counts = new Map();
+  for (const currency of currencies.filter(Boolean)) {
+    counts.set(currency, (counts.get(currency) || 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([currency]) => currency)[0] || "";
 }
 
 function extractTables(rows, type) {
@@ -1072,13 +1142,13 @@ function cleanCurrency(value) {
   if (!text) {
     return "";
   }
-  if (text.includes("USD")) {
+  if (text.includes("USD") || text.includes("U$S") || text.includes("US$")) {
     return "USD";
   }
-  if (text.includes("GS") || text.includes("PYG")) {
+  if (text.includes("GS") || text.includes("PYG") || text.includes("GUARANI")) {
     return "GS";
   }
-  return stringify(value).trim();
+  return "";
 }
 
 function cleanProvider(value) {
