@@ -445,7 +445,7 @@ function explicitCurrency(value) {
     return "";
   }
   if (text.includes("gs") || text.includes("pyg") || text.includes("guarani")) {
-    return "GS";
+    return "PYG";
   }
   if (text.includes("usd") || text.includes("u$s") || text.includes("us$") || text.includes("dolar")) {
     return "USD";
@@ -469,10 +469,10 @@ function inferCurrencyFromNumberFormat(value, rawValue) {
     return "USD";
   }
   if (hasDot && !hasComma && /^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
-    return "GS";
+    return "PYG";
   }
   if (hasComma && !hasDot && /^\d{1,3}(,\d{3})+$/.test(cleaned)) {
-    return "GS";
+    return "PYG";
   }
   return "";
 }
@@ -1132,7 +1132,7 @@ function detectCurrency(text) {
     return "USD";
   }
   if (/\bgs\b|guarani|guaranies|pyg/.test(normalized)) {
-    return "GS";
+    return "PYG";
   }
   return "";
 }
@@ -1146,7 +1146,7 @@ function cleanCurrency(value) {
     return "USD";
   }
   if (text.includes("GS") || text.includes("PYG") || text.includes("GUARANI")) {
-    return "GS";
+    return "PYG";
   }
   return "";
 }
