@@ -278,7 +278,11 @@ async function processWorkbookFile(file) {
     const rowTechs = extractTechs(item.rawText);
     const tech = rowTechs[0] || fileTechs[0] || "TECH PENDIENTE";
     const providerMatch = item.provider
-      ? { provider: item.provider, source: "PClientes", detail: pclientes.sheetName }
+      ? {
+        provider: item.provider,
+        source: "PClientes",
+        detail: item.providerInferred ? `${pclientes.sheetName}: columna G` : pclientes.sheetName,
+      }
       : findProviderForItem(item, bomTables);
     const provider = providerMatch.provider || "PROVEEDOR PENDIENTE";
     const amount = calculateLineAmount(item);
@@ -483,8 +487,9 @@ function mapHeader(row, type) {
   if (!hasClient && !hasProviderBom) {
     return null;
   }
-  if (type === "client" && map.provider === undefined && map.total !== undefined) {
-    map.provider = map.total + 1;
+  if (type === "client" && map.provider === undefined) {
+    map.provider = 6;
+    map.providerInferred = true;
   }
   return map;
 }
@@ -524,6 +529,7 @@ function rowToItem(row, header) {
     costAsuUnit,
     costAsuSubtotal,
     provider: cleanProvider(valueAt(row, header.provider)),
+    providerInferred: Boolean(header.providerInferred),
     currency: cleanCurrency(valueAt(row, header.currency)) || detectCurrency(rawText),
     rawText,
   };

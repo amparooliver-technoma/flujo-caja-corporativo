@@ -15,6 +15,7 @@ App web estatica para consolidar archivos Excel de presupuesto en una linea por 
 - El TECH se detecta desde el nombre del archivo con formatos como `TECH11474` o `TECH-11880`.
 - Se busca la mejor hoja `PClientes` por encabezados detectados.
 - Se buscan hojas `BOM` o `Infra` para encontrar proveedor por item, codigo o descripcion.
+- Si no hay encabezado `PROVEEDOR` en `PClientes`, se toma la columna G como proveedor.
 - El output agrupa por `TECH + proveedor + moneda`.
 - El monto de cada item se calcula exclusivamente con `Costo Asu sub-Total x 1,1`.
 - Si no existe `Costo Asu sub-Total` numerico, el item no se suma y queda marcado como omitido en la trazabilidad.

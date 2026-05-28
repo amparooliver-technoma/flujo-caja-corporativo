@@ -12,6 +12,7 @@ La app procesa los archivos localmente en el navegador. No sube los Excel a ning
 
 - Detecta `TECH` desde el nombre del archivo.
 - Detecta la hoja `PClientes`.
+- Si no hay encabezado `PROVEEDOR`, toma proveedor desde la columna G de `PClientes`.
 - Toma `Costo Asu sub-Total`.
 - Multiplica cada item por `1,1`.
 - Agrupa por `TECH + proveedor + moneda`.
