@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flujo de Caja Corporativo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="vendor/xlsx.full.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="toolbar" aria-label="Controles principales">
+        <div>
+          <h1>Flujo de Caja Corporativo</h1>
+          <p>Consolida presupuestos Excel en una linea por proveedor por TECH.</p>
+        </div>
+        <div class="actions">
+          <label class="button primary">
+            Seleccionar Excel
+            <input id="fileInput" type="file" accept=".xlsx,.xlsm,.xls" multiple>
+          </label>
+          <button id="processButton" class="button" disabled>Procesar</button>
+          <button id="downloadButton" class="button" disabled>Descargar output</button>
+          <button id="downloadTraceButton" class="button" disabled>Descargar trazabilidad</button>
+        </div>
+      </section>
+
+      <section id="dropZone" class="drop-zone" aria-label="Zona para cargar archivos">
+        <strong>Arrastra archivos .xlsx aca</strong>
+        <span>Los archivos se procesan localmente en el navegador.</span>
+      </section>
+
+      <section class="status-grid" aria-label="Resumen">
+        <article>
+          <span>Archivos</span>
+          <strong id="fileCount">0</strong>
+        </article>
+        <article>
+          <span>Lineas output</span>
+          <strong id="rowCount">0</strong>
+        </article>
+        <article>
+          <span>Advertencias</span>
+          <strong id="warningCount">0</strong>
+        </article>
+        <article>
+          <span>Total</span>
+          <strong id="grandTotal">0</strong>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Archivos cargados</h2>
+            <button id="clearButton" class="text-button" disabled>Limpiar</button>
+          </div>
+          <ul id="fileList" class="file-list"></ul>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Advertencias</h2>
+          </div>
+          <div id="warnings" class="warnings empty">Sin advertencias.</div>
+        </div>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="panel-header">
+          <h2>Vista previa del output</h2>
+          <span id="sheetName">BASE COMPRAS</span>
+        </div>
+        <div class="filters" aria-label="Filtros de tabla">
+          <label>
+            Buscar
+            <input id="searchInput" type="search" placeholder="TECH, proveedor, cliente...">
+          </label>
+          <label>
+            TECH
+            <select id="techFilter">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label>
+            Moneda
+            <select id="currencyFilter">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <button id="resetFiltersButton" class="button small" disabled>Limpiar filtros</button>
+          <span id="filteredCount" class="filtered-count">0 visibles</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Referencia del pedido - TECH</th>
+                <th>Proveedor</th>
+                <th>Cliente</th>
+                <th>Fecha inicio</th>
+                <th>Total</th>
+                <th>Moneda</th>
+                <th>EQ. USD</th>
+                <th>Probabilidad</th>
+                <th>SECTOR</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody">
+              <tr>
+                <td colspan="9" class="empty-cell">Todavia no hay datos procesados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel trace-panel">
+        <div class="panel-header">
+          <h2>Trazabilidad de sumas</h2>
+          <span id="traceCount">0 items fuente</span>
+        </div>
+        <div class="filters" aria-label="Filtros de trazabilidad">
+          <label>
+            Buscar trazabilidad
+            <input id="traceSearchInput" type="search" placeholder="Archivo, item, proveedor, descripcion...">
+          </label>
+          <label>
+            Incluido
+            <select id="traceIncludedFilter">
+              <option value="">Todos</option>
+              <option value="SI">SI</option>
+              <option value="NO">NO</option>
+            </select>
+          </label>
+          <label>
+            Fuente proveedor
+            <select id="traceProviderSourceFilter">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <button id="resetTraceFiltersButton" class="button small" disabled>Limpiar trazabilidad</button>
+        </div>
+        <div class="table-wrap trace-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>TECH</th>
+                <th>Incluido</th>
+                <th>Proveedor agrupado</th>
+                <th>Total item</th>
+                <th>Moneda</th>
+                <th>Archivo</th>
+                <th>Hoja PClientes</th>
+                <th>Item</th>
+                <th>Nro de Parte</th>
+                <th>Descripcion</th>
+                <th>Cant.</th>
+                <th>Unit.</th>
+                <th>Costo Asu Unitario</th>
+                <th>Costo Asu sub-Total</th>
+                <th>Calculo aplicado</th>
+                <th>Fuente proveedor</th>
+                <th>Hoja/criterio match</th>
+              </tr>
+            </thead>
+            <tbody id="traceBody">
+              <tr>
+                <td colspan="17" class="empty-cell">Todavia no hay trazabilidad.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

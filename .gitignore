@@ -1,0 +1,14 @@
+# Archivos de entrada/salida locales
+*.xlsx
+*.xlsm
+*.xls
+~$*
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Dependencias generadas si se migra a npm mas adelante
+node_modules/
+dist/
