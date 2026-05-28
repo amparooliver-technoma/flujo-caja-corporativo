@@ -15,6 +15,7 @@ La app procesa los archivos localmente en el navegador. No sube los Excel a ning
 - Toma `Costo Asu sub-Total`.
 - Multiplica cada item por `1,1`.
 - Agrupa por `TECH + proveedor + moneda`.
+- Detecta `Moneda` desde el resumen/total de la hoja `PClientes`, normalmente en el bloque `Cantidad / Moneda / Total`.
 - Exporta el formato `BASE COMPRAS`.
 
 ## Trazabilidad

@@ -259,6 +259,9 @@ async function processWorkbookFile(file) {
     warnings.push(`${file.name}: no se encontro una hoja PClientes utilizable.`);
     return { lines: [], traceRows: [], warnings };
   }
+  if (!pclientes.currency) {
+    warnings.push(`${file.name}: no se pudo detectar moneda general en ${pclientes.sheetName}. La columna Moneda puede quedar vacia.`);
+  }
 
   const bomTables = findBomTables(workbook, pclientes.sheetName);
   if (bomTables.length === 0) {
@@ -285,7 +288,7 @@ async function processWorkbookFile(file) {
       provider,
       client: clientName,
       total: Number.isFinite(total) ? total : "",
-      currency: item.currency || detectCurrency(item.rawText),
+      currency: item.currency || pclientes.currency || detectCurrency(item.rawText),
       sourceFile: file.name,
       clientSheet: pclientes.sheetName,
       item: item.item,
@@ -335,11 +338,13 @@ function findBestClientSheet(workbook) {
       const rows = sheetRows(workbook.Sheets[sheetName]);
       const tables = extractTables(rows, "client");
       const items = tables.flatMap((table) => table.items);
+      const currency = detectSheetCurrency(rows);
       return {
         sheetName,
         rows,
         tables,
         items,
+        currency,
         score: items.length * 10 + tables.length * 5 + (normalizeText(sheetName) === "pclientes" ? 4 : 0),
       };
     })
@@ -374,6 +379,38 @@ function sheetRows(sheet) {
     defval: null,
     raw: true,
   });
+}
+
+function detectSheetCurrency(rows) {
+  const found = new Map();
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex] || [];
+    const labels = row.map((cell) => normalizeText(cell));
+    const currencyIndex = labels.findIndex((label) => label === "moneda" || label.includes("moneda"));
+
+    if (currencyIndex !== -1) {
+      for (let lookAhead = rowIndex + 1; lookAhead < Math.min(rows.length, rowIndex + 8); lookAhead += 1) {
+        addDetectedCurrency(found, (rows[lookAhead] || [])[currencyIndex]);
+      }
+    }
+
+    for (const cell of row) {
+      addDetectedCurrency(found, cell);
+    }
+  }
+
+  return Array.from(found.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([currency]) => currency)[0] || "";
+}
+
+function addDetectedCurrency(found, value) {
+  const currency = cleanCurrency(value);
+  if (currency === "USD" || currency === "GS" || currency === "PYG") {
+    const normalized = currency === "PYG" ? "GS" : currency;
+    found.set(normalized, (found.get(normalized) || 0) + 1);
+  }
 }
 
 function extractTables(rows, type) {
