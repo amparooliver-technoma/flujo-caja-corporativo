@@ -1,17 +1,16 @@
 const OUTPUT_HEADERS = [
   "Referencia del pedido - TECH",
   "Proveedor",
+  "Oportunidad",
   "Cliente",
+  "Etapa",
+  "Comercial",
   "Fecha inicio",
   "Total",
   "Moneda",
   "EQ. USD",
   "Probabilidad",
   "SECTOR",
-  "Oportunidad",
-  "Cliente oportunidad",
-  "Etapa",
-  "Comercial",
 ];
 
 const state = {
@@ -273,16 +272,12 @@ async function processSelectedFiles() {
         const existing = groups.get(key) || {
           tech: line.tech,
           provider: line.provider,
-          client: line.client || "",
           total: 0,
           currency: line.currency || "",
           itemCount: 0,
         };
         existing.total += line.total;
         existing.itemCount += 1;
-        if (!existing.client && line.client) {
-          existing.client = line.client;
-        }
         groups.set(key, existing);
       }
     } catch (error) {
@@ -295,17 +290,16 @@ async function processSelectedFiles() {
     .map((row) => ({
       "Referencia del pedido - TECH": row.tech,
       Proveedor: row.provider,
-      Cliente: row.client,
+      Oportunidad: "",
+      Cliente: "",
+      Etapa: "",
+      Comercial: "",
       "Fecha inicio": "",
       Total: roundMoney(row.total),
       Moneda: row.currency,
       "EQ. USD": "",
       Probabilidad: "",
       SECTOR: "CORPORATIVO",
-      Oportunidad: "",
-      "Cliente oportunidad": "",
-      Etapa: "",
-      Comercial: "",
       _itemCount: row.itemCount,
     }));
 
@@ -411,7 +405,7 @@ function enrichOutputRowsWithCrm() {
     const tech = extractTechs(row["Referencia del pedido - TECH"])[0];
     const crm = tech ? state.crm.records.get(tech) : null;
     row.Oportunidad = crm?.oportunidad || "";
-    row["Cliente oportunidad"] = crm?.cliente || "";
+    row.Cliente = crm?.cliente || "";
     row.Etapa = crm?.etapa || "";
     row.Comercial = crm?.comercial || "";
   }
@@ -450,7 +444,6 @@ async function processWorkbookFile(file) {
     warnings.push(`${file.name}: no se encontro una hoja BOM utilizable. Se usara proveedor desde PClientes si existe.`);
   }
 
-  const clientName = detectClientName(file.name);
   const lines = [];
   const traceRows = [];
   let missingProvider = 0;
@@ -472,7 +465,6 @@ async function processWorkbookFile(file) {
     const traceBase = {
       tech,
       provider,
-      client: clientName,
       total: Number.isFinite(total) ? total : "",
       currency: item.currency || pclientes.currency || detectCurrency(item.rawText),
       sourceFile: file.name,
@@ -908,7 +900,7 @@ function downloadWorkbook() {
 
   const dataRows = rowsToExport.map((row) => OUTPUT_HEADERS.map((header) => row[header] ?? ""));
   const worksheet = XLSX.utils.aoa_to_sheet([
-    [null, null, null, null, "TC", 6000, 0, null, null],
+    [null, null, null, null, null, null, null, "TC", 6000, 0, null, null],
     OUTPUT_HEADERS,
     ...dataRows,
   ]);
@@ -916,17 +908,16 @@ function downloadWorkbook() {
   worksheet["!cols"] = [
     { wch: 28 },
     { wch: 28 },
-    { wch: 28 },
-    { wch: 14 },
-    { wch: 16 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 16 },
     { wch: 36 },
     { wch: 28 },
     { wch: 18 },
     { wch: 28 },
+    { wch: 14 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 14 },
+    { wch: 16 },
   ];
 
   const workbook = XLSX.utils.book_new();
@@ -1323,16 +1314,6 @@ function extractTechs(text) {
     match = pattern.exec(text || "");
   }
   return matches;
-}
-
-function detectClientName(fileName) {
-  const withoutExtension = fileName.replace(/\.[^.]+$/, "");
-  return withoutExtension
-    .replace(/(^|[-_.\s])20\d{2}([-_.\s]|$)/g, " ")
-    .replace(/TECH[-\s]?\d+/gi, " ")
-    .replace(/[-_.]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function detectCurrency(text) {

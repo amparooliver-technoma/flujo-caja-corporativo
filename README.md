@@ -26,10 +26,10 @@ La app procesa los archivos localmente en el navegador. No sube los Excel ni los
 
 Opcionalmente se puede cargar un Excel con columnas `Numero`, `Oportunidad`, `Cliente`, `Etapa` y `Comercial`.
 
-La app cruza por TECH y agrega al output, a la derecha de `SECTOR`, las columnas:
+La app cruza por TECH y agrega al output, desde la tercera columna, las columnas:
 
 - `Oportunidad`
-- `Cliente oportunidad`
+- `Cliente`
 - `Etapa`
 - `Comercial`
 

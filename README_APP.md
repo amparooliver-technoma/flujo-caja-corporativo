@@ -15,7 +15,7 @@ App web estatica para consolidar archivos Excel de presupuesto en una linea por 
 
 - El TECH se detecta desde el nombre del archivo con formatos como `TECH11474` o `TECH-11880`.
 - Los ZIP se descomprimen localmente en el navegador y solo se toman archivos Excel.
-- El Excel CRM se cruza por TECH y agrega `Oportunidad`, `Cliente oportunidad`, `Etapa` y `Comercial` a la derecha de `SECTOR`.
+- El Excel CRM se cruza por TECH y agrega `Oportunidad`, `Cliente`, `Etapa` y `Comercial` desde la tercera columna del output.
 - Se busca la mejor hoja `PClientes` por encabezados detectados.
 - Se buscan hojas `BOM` o `Infra` para encontrar proveedor por item, codigo o descripcion.
 - Si no hay encabezado `PROVEEDOR` en `PClientes`, se toma la columna G como proveedor.
