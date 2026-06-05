@@ -7,13 +7,15 @@ App web estatica para consolidar archivos Excel de presupuesto en una linea por 
 1. Abrir `index.html` en el navegador, o usar el servidor local si esta disponible.
 2. Seleccionar o arrastrar uno o mas archivos `.xlsx`, o un `.zip` con varios Excel.
 3. Presionar `Procesar`.
-4. Revisar la vista previa, las advertencias y la tabla de trazabilidad.
-5. Descargar el output o la trazabilidad.
+4. Opcionalmente cargar el Excel CRM de oportunidades.
+5. Revisar la vista previa, las advertencias y la tabla de trazabilidad.
+6. Descargar el output o la trazabilidad.
 
 ## Reglas implementadas
 
 - El TECH se detecta desde el nombre del archivo con formatos como `TECH11474` o `TECH-11880`.
 - Los ZIP se descomprimen localmente en el navegador y solo se toman archivos Excel.
+- El Excel CRM se cruza por TECH y agrega `Oportunidad`, `Cliente oportunidad`, `Etapa` y `Comercial` a la derecha de `SECTOR`.
 - Se busca la mejor hoja `PClientes` por encabezados detectados.
 - Se buscan hojas `BOM` o `Infra` para encontrar proveedor por item, codigo o descripcion.
 - Si no hay encabezado `PROVEEDOR` en `PClientes`, se toma la columna G como proveedor.

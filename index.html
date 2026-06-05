@@ -24,6 +24,10 @@
           <button id="processButton" class="button" disabled>Procesar</button>
           <button id="downloadButton" class="button" disabled>Descargar output</button>
           <button id="downloadTraceButton" class="button" disabled>Descargar trazabilidad</button>
+          <label class="button">
+            Cargar CRM
+            <input id="crmInput" type="file" accept=".xlsx,.xlsm,.xls">
+          </label>
         </div>
       </section>
 
@@ -48,6 +52,10 @@
         <article>
           <span>Total</span>
           <strong id="grandTotal">0</strong>
+        </article>
+        <article>
+          <span>CRM</span>
+          <strong id="crmStatus">Sin cargar</strong>
         </article>
       </section>
 
@@ -110,11 +118,15 @@
                 <th>EQ. USD</th>
                 <th>Probabilidad</th>
                 <th>SECTOR</th>
+                <th>Oportunidad</th>
+                <th>Cliente oportunidad</th>
+                <th>Etapa</th>
+                <th>Comercial</th>
               </tr>
             </thead>
             <tbody id="resultBody">
               <tr>
-                <td colspan="9" class="empty-cell">Todavia no hay datos procesados.</td>
+                <td colspan="13" class="empty-cell">Todavia no hay datos procesados.</td>
               </tr>
             </tbody>
           </table>

@@ -8,6 +8,10 @@ const OUTPUT_HEADERS = [
   "EQ. USD",
   "Probabilidad",
   "SECTOR",
+  "Oportunidad",
+  "Cliente oportunidad",
+  "Etapa",
+  "Comercial",
 ];
 
 const state = {
@@ -15,6 +19,10 @@ const state = {
   outputRows: [],
   traceRows: [],
   warnings: [],
+  crm: {
+    fileName: "",
+    records: new Map(),
+  },
   filters: {
     search: "",
     tech: "",
@@ -29,6 +37,7 @@ const state = {
 
 const els = {
   fileInput: document.querySelector("#fileInput"),
+  crmInput: document.querySelector("#crmInput"),
   processButton: document.querySelector("#processButton"),
   downloadButton: document.querySelector("#downloadButton"),
   downloadTraceButton: document.querySelector("#downloadTraceButton"),
@@ -41,6 +50,7 @@ const els = {
   rowCount: document.querySelector("#rowCount"),
   warningCount: document.querySelector("#warningCount"),
   grandTotal: document.querySelector("#grandTotal"),
+  crmStatus: document.querySelector("#crmStatus"),
   searchInput: document.querySelector("#searchInput"),
   techFilter: document.querySelector("#techFilter"),
   currencyFilter: document.querySelector("#currencyFilter"),
@@ -60,6 +70,14 @@ els.fileInput.addEventListener("change", async (event) => {
   els.fileInput.value = "";
 });
 
+els.crmInput.addEventListener("change", async (event) => {
+  const file = Array.from(event.target.files || [])[0];
+  if (file) {
+    await loadCrmFile(file);
+  }
+  els.crmInput.value = "";
+});
+
 els.processButton.addEventListener("click", async () => {
   await processSelectedFiles();
 });
@@ -77,6 +95,10 @@ els.clearButton.addEventListener("click", () => {
   state.outputRows = [];
   state.traceRows = [];
   state.warnings = [];
+  state.crm = {
+    fileName: "",
+    records: new Map(),
+  };
   resetFilters();
   resetTraceFilters();
   render();
@@ -280,13 +302,119 @@ async function processSelectedFiles() {
       "EQ. USD": "",
       Probabilidad: "",
       SECTOR: "CORPORATIVO",
+      Oportunidad: "",
+      "Cliente oportunidad": "",
+      Etapa: "",
+      Comercial: "",
       _itemCount: row.itemCount,
     }));
 
+  enrichOutputRowsWithCrm();
   resetFilters();
   resetTraceFilters();
   els.processButton.textContent = "Procesar";
   render();
+}
+
+async function loadCrmFile(file) {
+  if (!window.XLSX) {
+    state.warnings.push("No se pudo cargar la libreria XLSX para leer el CRM.");
+    render();
+    return;
+  }
+
+  try {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, {
+      type: "array",
+      cellDates: true,
+      raw: true,
+    });
+    const parsed = parseCrmWorkbook(workbook);
+    state.crm = {
+      fileName: file.name,
+      records: parsed.records,
+    };
+    state.warnings.push(`${file.name}: ${parsed.records.size} TECH(s) cargados desde CRM.`);
+    for (const warning of parsed.warnings) {
+      state.warnings.push(`${file.name}: ${warning}`);
+    }
+    enrichOutputRowsWithCrm();
+  } catch (error) {
+    state.warnings.push(`${file.name}: no se pudo leer el CRM (${error.message}).`);
+  }
+  render();
+}
+
+function parseCrmWorkbook(workbook) {
+  const warnings = [];
+  const records = new Map();
+  const sheetName = workbook.SheetNames[0];
+  const rows = sheetRows(workbook.Sheets[sheetName]);
+  const headerRowIndex = rows.findIndex((row) => {
+    const labels = row.map((cell) => normalizeText(cell));
+    return labels.includes("numero") && labels.includes("oportunidad");
+  });
+
+  if (headerRowIndex === -1) {
+    warnings.push("no se encontraron encabezados esperados: Numero, Oportunidad, Cliente, Etapa, Comercial.");
+    return { records, warnings };
+  }
+
+  const header = mapCrmHeader(rows[headerRowIndex]);
+  if (header.number === undefined) {
+    warnings.push("no se encontro la columna Numero.");
+    return { records, warnings };
+  }
+
+  for (let index = headerRowIndex + 1; index < rows.length; index += 1) {
+    const row = rows[index] || [];
+    const tech = extractTechs(stringify(valueAt(row, header.number)) || row.map(stringify).join(" "))[0];
+    if (!tech) {
+      continue;
+    }
+    if (records.has(tech)) {
+      warnings.push(`${tech} aparece mas de una vez en CRM. Se conserva la primera coincidencia.`);
+      continue;
+    }
+    records.set(tech, {
+      oportunidad: stringify(valueAt(row, header.opportunity)).trim(),
+      cliente: stringify(valueAt(row, header.client)).trim(),
+      etapa: stringify(valueAt(row, header.stage)).trim(),
+      comercial: stringify(valueAt(row, header.salesperson)).trim(),
+    });
+  }
+
+  return { records, warnings };
+}
+
+function mapCrmHeader(row) {
+  const map = {};
+  row.map((cell) => normalizeText(cell)).forEach((label, index) => {
+    if (label === "numero" || label.includes("numero")) {
+      map.number = index;
+    } else if (label === "oportunidad" || label.includes("oportunidad")) {
+      map.opportunity = index;
+    } else if (label === "cliente" || label.includes("cliente")) {
+      map.client = index;
+    } else if (label === "etapa" || label.includes("etapa")) {
+      map.stage = index;
+    } else if (label === "comercial" || label.includes("comercial")) {
+      map.salesperson = index;
+    }
+  });
+  return map;
+}
+
+function enrichOutputRowsWithCrm() {
+  for (const row of state.outputRows) {
+    const tech = extractTechs(row["Referencia del pedido - TECH"])[0];
+    const crm = tech ? state.crm.records.get(tech) : null;
+    row.Oportunidad = crm?.oportunidad || "";
+    row["Cliente oportunidad"] = crm?.cliente || "";
+    row.Etapa = crm?.etapa || "";
+    row.Comercial = crm?.comercial || "";
+  }
 }
 
 async function processWorkbookFile(file) {
@@ -795,6 +923,10 @@ function downloadWorkbook() {
     { wch: 12 },
     { wch: 14 },
     { wch: 16 },
+    { wch: 36 },
+    { wch: 28 },
+    { wch: 18 },
+    { wch: 28 },
   ];
 
   const workbook = XLSX.utils.book_new();
@@ -889,9 +1021,14 @@ function render() {
   els.rowCount.textContent = String(state.outputRows.length);
   els.warningCount.textContent = String(state.warnings.length);
   els.grandTotal.textContent = formatMoney(state.outputRows.reduce((sum, row) => sum + (Number(row.Total) || 0), 0));
+  els.crmStatus.textContent = state.crm.fileName ? `${state.crm.records.size} TECH` : "Sin cargar";
 
   els.processButton.disabled = state.files.length === 0;
-  els.clearButton.disabled = state.files.length === 0 && state.outputRows.length === 0 && state.traceRows.length === 0 && state.warnings.length === 0;
+  els.clearButton.disabled = state.files.length === 0
+    && state.outputRows.length === 0
+    && state.traceRows.length === 0
+    && state.warnings.length === 0
+    && !state.crm.fileName;
   els.downloadButton.disabled = state.outputRows.length === 0;
   els.downloadTraceButton.disabled = state.traceRows.length === 0;
 

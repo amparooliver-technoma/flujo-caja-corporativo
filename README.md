@@ -12,6 +12,7 @@ La app procesa los archivos localmente en el navegador. No sube los Excel ni los
 
 - Detecta `TECH` desde el nombre del archivo.
 - Acepta Excel individuales o un ZIP con multiples Excel.
+- Permite cargar un Excel CRM de oportunidades y enriquecer el output por TECH.
 - Detecta la hoja `PClientes`.
 - Si no hay encabezado `PROVEEDOR`, toma proveedor desde la columna G de `PClientes`.
 - Toma `Costo Asu sub-Total`.
@@ -20,6 +21,17 @@ La app procesa los archivos localmente en el navegador. No sube los Excel ni los
 - Detecta `Moneda` desde el resumen/total de la hoja `PClientes`: si el total tiene punto y coma se toma como `USD`; si usa separadores de miles sin decimal o indica `Gs.`, se toma como `PYG`.
 - Exporta el formato `BASE COMPRAS`.
 - Puede exportar todo el resultado o solo las filas visibles segun los filtros activos.
+
+## Enriquecimiento CRM
+
+Opcionalmente se puede cargar un Excel con columnas `Numero`, `Oportunidad`, `Cliente`, `Etapa` y `Comercial`.
+
+La app cruza por TECH y agrega al output, a la derecha de `SECTOR`, las columnas:
+
+- `Oportunidad`
+- `Cliente oportunidad`
+- `Etapa`
+- `Comercial`
 
 ## Trazabilidad
 
