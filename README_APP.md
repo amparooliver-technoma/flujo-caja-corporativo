@@ -5,7 +5,7 @@ App web estatica para consolidar archivos Excel de presupuesto en una linea por 
 ## Uso
 
 1. Abrir `index.html` en el navegador, o usar el servidor local si esta disponible.
-2. Seleccionar o arrastrar uno o mas archivos `.xlsx`.
+2. Seleccionar o arrastrar uno o mas archivos `.xlsx`, o un `.zip` con varios Excel.
 3. Presionar `Procesar`.
 4. Revisar la vista previa, las advertencias y la tabla de trazabilidad.
 5. Descargar el output o la trazabilidad.
@@ -13,6 +13,7 @@ App web estatica para consolidar archivos Excel de presupuesto en una linea por 
 ## Reglas implementadas
 
 - El TECH se detecta desde el nombre del archivo con formatos como `TECH11474` o `TECH-11880`.
+- Los ZIP se descomprimen localmente en el navegador y solo se toman archivos Excel.
 - Se busca la mejor hoja `PClientes` por encabezados detectados.
 - Se buscan hojas `BOM` o `Infra` para encontrar proveedor por item, codigo o descripcion.
 - Si no hay encabezado `PROVEEDOR` en `PClientes`, se toma la columna G como proveedor.
@@ -24,6 +25,7 @@ App web estatica para consolidar archivos Excel de presupuesto en una linea por 
 - `SECTOR` siempre queda como `CORPORATIVO`.
 - Si falta proveedor, se agrupa bajo `PROVEEDOR PENDIENTE` y se registra advertencia.
 - La trazabilidad muestra cada item fuente usado en las sumas, incluyendo archivo, hoja, item, parte, descripcion, `Costo Asu Unitario`, calculo aplicado y criterio usado para detectar proveedor.
+- Si se marca `Exportar solo filas visibles`, las descargas respetan los filtros activos.
 
 ## Limitacion conocida
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Flujo de Caja Corporativo</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="vendor/jszip.min.js" defer></script>
     <script src="vendor/xlsx.full.min.js" defer></script>
     <script src="app.js" defer></script>
   </head>
@@ -17,8 +18,8 @@
         </div>
         <div class="actions">
           <label class="button primary">
-            Seleccionar Excel
-            <input id="fileInput" type="file" accept=".xlsx,.xlsm,.xls" multiple>
+            Seleccionar Excel/ZIP
+            <input id="fileInput" type="file" accept=".xlsx,.xlsm,.xls,.zip" multiple>
           </label>
           <button id="processButton" class="button" disabled>Procesar</button>
           <button id="downloadButton" class="button" disabled>Descargar output</button>
@@ -27,8 +28,8 @@
       </section>
 
       <section id="dropZone" class="drop-zone" aria-label="Zona para cargar archivos">
-        <strong>Arrastra archivos .xlsx aca</strong>
-        <span>Los archivos se procesan localmente en el navegador.</span>
+        <strong>Arrastra archivos .xlsx o .zip aca</strong>
+        <span>Los Excel dentro de ZIP tambien se procesan localmente en el navegador.</span>
       </section>
 
       <section class="status-grid" aria-label="Resumen">
@@ -90,6 +91,10 @@
             </select>
           </label>
           <button id="resetFiltersButton" class="button small" disabled>Limpiar filtros</button>
+          <label class="checkbox-filter">
+            <input id="exportFilteredInput" type="checkbox">
+            Exportar solo filas visibles
+          </label>
           <span id="filteredCount" class="filtered-count">0 visibles</span>
         </div>
         <div class="table-wrap">

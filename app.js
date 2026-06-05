@@ -45,6 +45,7 @@ const els = {
   techFilter: document.querySelector("#techFilter"),
   currencyFilter: document.querySelector("#currencyFilter"),
   resetFiltersButton: document.querySelector("#resetFiltersButton"),
+  exportFilteredInput: document.querySelector("#exportFilteredInput"),
   filteredCount: document.querySelector("#filteredCount"),
   traceBody: document.querySelector("#traceBody"),
   traceCount: document.querySelector("#traceCount"),
@@ -54,8 +55,8 @@ const els = {
   resetTraceFiltersButton: document.querySelector("#resetTraceFiltersButton"),
 };
 
-els.fileInput.addEventListener("change", (event) => {
-  addFiles(Array.from(event.target.files || []));
+els.fileInput.addEventListener("change", async (event) => {
+  await addFiles(Array.from(event.target.files || []));
   els.fileInput.value = "";
 });
 
@@ -149,12 +150,25 @@ els.resetTraceFiltersButton.addEventListener("click", () => {
   });
 });
 
-els.dropZone.addEventListener("drop", (event) => {
-  addFiles(Array.from(event.dataTransfer.files || []));
+els.dropZone.addEventListener("drop", async (event) => {
+  await addFiles(Array.from(event.dataTransfer.files || []));
 });
 
-function addFiles(files) {
-  const excelFiles = files.filter((file) => /\.(xlsx|xlsm|xls)$/i.test(file.name) && !file.name.startsWith("~$"));
+async function addFiles(files) {
+  const excelFiles = [];
+  const newWarnings = [];
+
+  for (const file of files) {
+    if (isExcelFile(file.name)) {
+      excelFiles.push(file);
+      continue;
+    }
+    if (isZipFile(file.name)) {
+      const extracted = await extractExcelFilesFromZip(file, newWarnings);
+      excelFiles.push(...extracted);
+    }
+  }
+
   const known = new Set(state.files.map((file) => `${file.name}|${file.size}|${file.lastModified}`));
 
   for (const file of excelFiles) {
@@ -165,7 +179,47 @@ function addFiles(files) {
     }
   }
 
+  state.warnings.push(...newWarnings);
   render();
+}
+
+function isExcelFile(name) {
+  const baseName = name.split(/[\\/]/).pop() || name;
+  return /\.(xlsx|xlsm|xls)$/i.test(baseName) && !baseName.startsWith("~$");
+}
+
+function isZipFile(name) {
+  return /\.zip$/i.test(name);
+}
+
+async function extractExcelFilesFromZip(file, warnings) {
+  if (!window.JSZip) {
+    warnings.push(`${file.name}: no se pudo cargar la libreria ZIP.`);
+    return [];
+  }
+
+  try {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const extracted = [];
+    const entries = Object.values(zip.files)
+      .filter((entry) => !entry.dir && isExcelFile(entry.name));
+
+    for (const entry of entries) {
+      const blob = await entry.async("blob");
+      const cleanName = entry.name.split(/[\\/]/).pop();
+      const extractedName = `${file.name.replace(/\.zip$/i, "")} - ${cleanName}`;
+      extracted.push(new File([blob], extractedName, {
+        type: blob.type || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        lastModified: file.lastModified,
+      }));
+    }
+
+    warnings.push(`${file.name}: ${extracted.length} Excel(s) extraidos del ZIP.`);
+    return extracted;
+  } catch (error) {
+    warnings.push(`${file.name}: no se pudo leer el ZIP (${error.message}).`);
+    return [];
+  }
 }
 
 async function processSelectedFiles() {
@@ -719,7 +773,12 @@ function downloadWorkbook() {
     return;
   }
 
-  const dataRows = state.outputRows.map((row) => OUTPUT_HEADERS.map((header) => row[header] ?? ""));
+  const rowsToExport = shouldExportFilteredRows() ? getVisibleRows() : state.outputRows;
+  if (!rowsToExport.length) {
+    return;
+  }
+
+  const dataRows = rowsToExport.map((row) => OUTPUT_HEADERS.map((header) => row[header] ?? ""));
   const worksheet = XLSX.utils.aoa_to_sheet([
     [null, null, null, null, "TC", 6000, 0, null, null],
     OUTPUT_HEADERS,
@@ -740,7 +799,7 @@ function downloadWorkbook() {
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "BASE COMPRAS");
-  XLSX.writeFile(workbook, `base_compras_corporativo_${dateStamp()}.xlsx`);
+  XLSX.writeFile(workbook, `base_compras_corporativo_${exportSuffix()}_${dateStamp()}.xlsx`);
 }
 
 function downloadTraceWorkbook() {
@@ -767,7 +826,12 @@ function downloadTraceWorkbook() {
     "Fuente proveedor",
     "Hoja/criterio match",
   ];
-  const rows = getVisibleTraceRows().map((row) => [
+  const traceRowsToExport = shouldExportFilteredRows() ? getVisibleTraceRows() : state.traceRows;
+  if (!traceRowsToExport.length) {
+    return;
+  }
+
+  const rows = traceRowsToExport.map((row) => [
     row.tech,
     row.included,
     row.provider,
@@ -809,7 +873,15 @@ function downloadTraceWorkbook() {
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "TRAZABILIDAD");
-  XLSX.writeFile(workbook, `trazabilidad_corporativo_${dateStamp()}.xlsx`);
+  XLSX.writeFile(workbook, `trazabilidad_corporativo_${exportSuffix()}_${dateStamp()}.xlsx`);
+}
+
+function shouldExportFilteredRows() {
+  return Boolean(els.exportFilteredInput.checked);
+}
+
+function exportSuffix() {
+  return shouldExportFilteredRows() ? "filtrado" : "completo";
 }
 
 function render() {

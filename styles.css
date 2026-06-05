@@ -273,7 +273,7 @@ h2 {
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(140px, 180px) minmax(120px, 160px) auto auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 180px) minmax(120px, 160px) auto auto auto;
   align-items: end;
   gap: 10px;
   padding: 12px 14px;
@@ -297,6 +297,24 @@ h2 {
   background: var(--surface);
   color: var(--text);
   padding: 6px 9px;
+}
+
+.checkbox-filter {
+  align-self: center;
+  display: flex;
+  grid-auto-flow: column;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.checkbox-filter input {
+  min-height: 0;
+  width: auto;
+  margin: 0;
 }
 
 .filters input:focus,
