@@ -11,51 +11,104 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="toolbar" aria-label="Controles principales">
-        <div>
+      <section class="hero" aria-label="Resumen del producto">
+        <div class="hero-copy">
+          <span class="eyebrow">Consolidador corporativo</span>
           <h1>Flujo de Caja Corporativo</h1>
-          <p>Consolida presupuestos Excel en una linea por proveedor por TECH.</p>
+          <p>Importa presupuestos Excel o ZIP, consolida por TECH y proveedor, y exporta una base lista para compras con trazabilidad completa.</p>
         </div>
-        <div class="actions">
-          <label class="button primary">
-            Seleccionar Excel/ZIP
-            <input id="fileInput" type="file" accept=".xlsx,.xlsm,.xls,.zip" multiple>
-          </label>
-          <button id="processButton" class="button" disabled>Procesar</button>
-          <button id="downloadButton" class="button" disabled>Descargar output</button>
-          <button id="downloadTraceButton" class="button" disabled>Descargar trazabilidad</button>
-          <label class="button">
-            Cargar CRM
-            <input id="crmInput" type="file" accept=".xlsx,.xlsm,.xls">
-          </label>
+        <div class="hero-metrics" aria-label="Estado actual">
+          <article>
+            <span>Archivos</span>
+            <strong id="fileCount">0</strong>
+          </article>
+          <article>
+            <span>Lineas output</span>
+            <strong id="rowCount">0</strong>
+          </article>
+          <article>
+            <span>Total</span>
+            <strong id="grandTotal">0</strong>
+          </article>
         </div>
       </section>
 
-      <section id="dropZone" class="drop-zone" aria-label="Zona para cargar archivos">
-        <strong>Arrastra archivos .xlsx o .zip aca</strong>
-        <span>Los Excel dentro de ZIP tambien se procesan localmente en el navegador.</span>
-      </section>
+      <section class="workflow" aria-label="Flujo principal">
+        <article id="stepImport" class="step-card step-import is-open" data-step="import">
+          <button class="step-toggle" type="button" aria-expanded="true" aria-controls="stepImportBody">
+            <span class="step-check" aria-hidden="true"></span>
+            <span class="step-title">
+              <span class="step-kicker">Paso 1</span>
+              <strong>Importar archivos</strong>
+              <small>Excel, ZIP y CRM opcional</small>
+            </span>
+            <span class="step-state">Pendiente</span>
+          </button>
+          <div id="stepImportBody" class="step-body">
+            <h2>Archivos fuente</h2>
+            <p>Selecciona presupuestos Excel o un ZIP. El procesamiento ocurre localmente en el navegador.</p>
+            <div id="dropZone" class="drop-zone" aria-label="Zona para cargar archivos">
+              <strong>Arrastra Excel o ZIP aca</strong>
+              <span>.xlsx, .xlsm, .xls o .zip</span>
+            </div>
+            <div class="step-actions">
+              <label class="button primary">
+                Seleccionar Excel/ZIP
+                <input id="fileInput" type="file" accept=".xlsx,.xlsm,.xls,.zip" multiple>
+              </label>
+              <label class="button subtle">
+                Cargar CRM
+                <input id="crmInput" type="file" accept=".xlsx,.xlsm,.xls">
+              </label>
+            </div>
+          </div>
+        </article>
 
-      <section class="status-grid" aria-label="Resumen">
-        <article>
-          <span>Archivos</span>
-          <strong id="fileCount">0</strong>
+        <article id="stepProcess" class="step-card is-locked" data-step="process">
+          <button class="step-toggle" type="button" aria-expanded="false" aria-controls="stepProcessBody" disabled>
+            <span class="step-check" aria-hidden="true"></span>
+            <span class="step-title">
+              <span class="step-kicker">Paso 2</span>
+              <strong>Procesar consolidacion</strong>
+              <small>Agrupar por TECH, proveedor y moneda</small>
+            </span>
+            <span class="step-state">Bloqueado</span>
+          </button>
+          <div id="stepProcessBody" class="step-body" hidden>
+            <h2>Consolidacion</h2>
+            <p>Agrupa items validos por TECH, proveedor y moneda. El CRM completa oportunidad, cliente, etapa y comercial.</p>
+            <div class="state-list">
+              <div>
+                <span>CRM</span>
+                <strong id="crmStatus">Sin cargar</strong>
+              </div>
+              <div>
+                <span>Advertencias</span>
+                <strong id="warningCount">0</strong>
+              </div>
+            </div>
+            <button id="processButton" class="button primary full" disabled>Procesar archivos</button>
+          </div>
         </article>
-        <article>
-          <span>Lineas output</span>
-          <strong id="rowCount">0</strong>
-        </article>
-        <article>
-          <span>Advertencias</span>
-          <strong id="warningCount">0</strong>
-        </article>
-        <article>
-          <span>Total</span>
-          <strong id="grandTotal">0</strong>
-        </article>
-        <article>
-          <span>CRM</span>
-          <strong id="crmStatus">Sin cargar</strong>
+
+        <article id="stepExport" class="step-card is-locked" data-step="export">
+          <button class="step-toggle" type="button" aria-expanded="false" aria-controls="stepExportBody" disabled>
+            <span class="step-check" aria-hidden="true"></span>
+            <span class="step-title">
+              <span class="step-kicker">Paso 3</span>
+              <strong>Exportar resultados</strong>
+              <small>Output y trazabilidad</small>
+            </span>
+            <span class="step-state">Bloqueado</span>
+          </button>
+          <div id="stepExportBody" class="step-body" hidden>
+            <h2>Resultados</h2>
+            <p>Revisa la vista previa, filtra lo necesario y descarga el output o la trazabilidad.</p>
+            <div class="export-actions">
+              <button id="downloadButton" class="button primary full" disabled>Descargar output</button>
+              <button id="downloadTraceButton" class="button full" disabled>Descargar trazabilidad</button>
+            </div>
+          </div>
         </article>
       </section>
 

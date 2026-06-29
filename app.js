@@ -32,6 +32,10 @@ const state = {
     included: "",
     providerSource: "",
   },
+  workflow: {
+    activeStep: "import",
+    processedSignature: "",
+  },
 };
 
 const els = {
@@ -62,12 +66,20 @@ const els = {
   traceIncludedFilter: document.querySelector("#traceIncludedFilter"),
   traceProviderSourceFilter: document.querySelector("#traceProviderSourceFilter"),
   resetTraceFiltersButton: document.querySelector("#resetTraceFiltersButton"),
+  workflowSteps: Array.from(document.querySelectorAll("[data-step]")),
 };
 
 els.fileInput.addEventListener("change", async (event) => {
   await addFiles(Array.from(event.target.files || []));
   els.fileInput.value = "";
 });
+
+for (const step of els.workflowSteps) {
+  const toggle = step.querySelector(".step-toggle");
+  toggle?.addEventListener("click", () => {
+    setActiveStep(step.dataset.step);
+  });
+}
 
 els.crmInput.addEventListener("change", async (event) => {
   const file = Array.from(event.target.files || [])[0];
@@ -98,6 +110,8 @@ els.clearButton.addEventListener("click", () => {
     fileName: "",
     records: new Map(),
   };
+  state.workflow.activeStep = "import";
+  state.workflow.processedSignature = "";
   resetFilters();
   resetTraceFilters();
   render();
@@ -178,6 +192,7 @@ els.dropZone.addEventListener("drop", async (event) => {
 async function addFiles(files) {
   const excelFiles = [];
   const newWarnings = [];
+  let addedFiles = false;
 
   for (const file of files) {
     if (isExcelFile(file.name)) {
@@ -197,10 +212,14 @@ async function addFiles(files) {
     if (!known.has(key)) {
       state.files.push(file);
       known.add(key);
+      addedFiles = true;
     }
   }
 
   state.warnings.push(...newWarnings);
+  if (addedFiles) {
+    state.workflow.activeStep = "process";
+  }
   render();
 }
 
@@ -306,7 +325,9 @@ async function processSelectedFiles() {
   enrichOutputRowsWithCrm();
   resetFilters();
   resetTraceFilters();
-  els.processButton.textContent = "Procesar";
+  state.workflow.processedSignature = fileSignature();
+  state.workflow.activeStep = "export";
+  els.processButton.textContent = "Procesar archivos";
   render();
 }
 
@@ -1007,7 +1028,86 @@ function exportSuffix() {
   return shouldExportFilteredRows() ? "filtrado" : "completo";
 }
 
+function setActiveStep(stepName) {
+  if (!isStepEnabled(stepName)) {
+    return;
+  }
+  state.workflow.activeStep = stepName;
+  renderWorkflowState();
+}
+
+function isStepEnabled(stepName) {
+  if (stepName === "import") {
+    return true;
+  }
+  if (stepName === "process") {
+    return state.files.length > 0;
+  }
+  if (stepName === "export") {
+    return isProcessComplete();
+  }
+  return false;
+}
+
+function isProcessComplete() {
+  return state.files.length > 0
+    && state.workflow.processedSignature
+    && state.workflow.processedSignature === fileSignature();
+}
+
+function fileSignature() {
+  return state.files
+    .map((file) => `${file.name}|${file.size}|${file.lastModified}`)
+    .join("||");
+}
+
+function renderWorkflowState() {
+  const importComplete = state.files.length > 0;
+  const processComplete = isProcessComplete();
+
+  if (!isStepEnabled(state.workflow.activeStep)) {
+    state.workflow.activeStep = importComplete ? "process" : "import";
+  }
+
+  const config = {
+    import: {
+      complete: importComplete,
+      enabled: true,
+      state: importComplete ? "Completado" : "Pendiente",
+    },
+    process: {
+      complete: processComplete,
+      enabled: importComplete,
+      state: processComplete ? "Completado" : importComplete ? "Listo" : "Bloqueado",
+    },
+    export: {
+      complete: processComplete,
+      enabled: processComplete,
+      state: processComplete ? "Listo" : "Bloqueado",
+    },
+  };
+
+  for (const step of els.workflowSteps) {
+    const stepName = step.dataset.step;
+    const toggle = step.querySelector(".step-toggle");
+    const body = step.querySelector(".step-body");
+    const stateLabel = step.querySelector(".step-state");
+    const current = config[stepName];
+    const isOpen = state.workflow.activeStep === stepName && current.enabled;
+
+    step.classList.toggle("is-open", isOpen);
+    step.classList.toggle("is-complete", current.complete);
+    step.classList.toggle("is-locked", !current.enabled);
+    toggle.disabled = !current.enabled;
+    toggle.setAttribute("aria-expanded", String(isOpen));
+    body.hidden = !isOpen;
+    stateLabel.textContent = current.state;
+  }
+}
+
 function render() {
+  const processComplete = isProcessComplete();
+
   els.fileCount.textContent = String(state.files.length);
   els.rowCount.textContent = String(state.outputRows.length);
   els.warningCount.textContent = String(state.warnings.length);
@@ -1020,9 +1120,10 @@ function render() {
     && state.traceRows.length === 0
     && state.warnings.length === 0
     && !state.crm.fileName;
-  els.downloadButton.disabled = state.outputRows.length === 0;
-  els.downloadTraceButton.disabled = state.traceRows.length === 0;
+  els.downloadButton.disabled = !processComplete || state.outputRows.length === 0;
+  els.downloadTraceButton.disabled = !processComplete || state.traceRows.length === 0;
 
+  renderWorkflowState();
   renderFiles();
   renderWarnings();
   renderFilterControls();
